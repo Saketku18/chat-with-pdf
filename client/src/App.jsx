@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./App.css";
 
-const API = "http://127.0.0.1:8000";
+const API = "https://chat-with-pdf-backend-1d7e.onrender.com";
 
 function App() {
   const [status, setStatus] = useState("idle");
