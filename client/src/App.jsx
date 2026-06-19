@@ -39,26 +39,56 @@ function App() {
 
   const handleDrop = (e) => { e.preventDefault(); setDragging(false); uploadFiles(e.dataTransfer.files); };
 
-  const sendMessage = async () => {
+ const sendMessage = async () => {
     const q = input.trim();
     if (!q || status === "chatting") return;
     setInput("");
+
+    const history = messages
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .map((m) => ({ role: m.role, content: m.text }));
+
     setMessages((prev) => [...prev, { role: "user", text: q }]);
     setStatus("chatting");
+
+    // Add empty assistant message to stream into
+    setMessages((prev) => [...prev, { role: "assistant", text: "" }]);
+
     try {
       const res = await fetch(`${API}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: q }),
+        body: JSON.stringify({ question: q, history }),
       });
-      const data = await res.json();
-      setMessages((prev) => [...prev, { role: "assistant", text: data.answer || data.error || "No answer returned." }]);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+
+        // Append each chunk to the last assistant message
+        setMessages((prev) => {
+          const updated = [...prev];
+          updated[updated.length - 1] = {
+            role: "assistant",
+            text: updated[updated.length - 1].text + chunk,
+          };
+          return updated;
+        });
+      }
     } catch (e) {
-      setMessages((prev) => [...prev, { role: "assistant", text: "Server error. Please try again." }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", text: "Server error. Please try again." },
+      ]);
     }
+
     setStatus("ready");
   };
-
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   };

@@ -1,12 +1,7 @@
-from langchain_core.prompts import (
-ChatPromptTemplate
-)
-
-from langchain_core.output_parsers import (
-StrOutputParser
-)
-
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 from agents.llm import llm
+
 
 prompt = ChatPromptTemplate.from_template(
 """
@@ -37,33 +32,19 @@ Answer:
 )
 
 chain = (
-prompt
-| llm
-| StrOutputParser()
+    prompt
+    | llm
+    | StrOutputParser()
 )
 
-def generate(
-    question,
-    docs,
-    history
-):
-    context = "\n\n".join(
-        doc.page_content
-        for doc in docs
-    )
+def generate(question, docs, history):
+    context = "\n\n".join(doc.page_content for doc in docs)
     history_text = "\n".join(
-    f"{msg.role}: {msg.content}"
-    for msg in history
-)
-
-    result= chain.invoke(
-        {
-            "question": question,
-            "context": context,
-            "history": history_text
-        }
+        f"{msg.role}: {msg.content}"
+        for msg in history
     )
-    print("\n===== GENERATED ANSWER =====")
-    print(result)
-
-    return result
+    return chain.stream({
+        "question": question,
+        "context": context,
+        "history": history_text
+    })

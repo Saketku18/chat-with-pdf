@@ -16,6 +16,7 @@ from agents.planner import plan
 from agents.query_writer import rewrite
 from agents.generator import generate
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 
 app = FastAPI()
 app.add_middleware(
@@ -95,10 +96,7 @@ async def chat(request: ChatRequest):
     question = request.question
     history = request.history
 
-    search_query = rewrite(
-        question,
-        history
-    )
+    search_query = rewrite(question, history)
 
     print("Original Question:", question)
     print("Rewritten Query:", search_query)
@@ -107,15 +105,10 @@ async def chat(request: ChatRequest):
     attempts = 0
 
     while attempts < 3:
-        docs = retrieve(
-    vectorstore,
-    search_query,
-    k
-)
+        docs = retrieve(vectorstore, search_query, k)
 
         summary_keywords = ["summary", "summarize", "topics", "chapters", "contents"]
         rerank_k = 15 if any(word in question.lower() for word in summary_keywords) else 5
-
         docs = rerank(question, docs, top_k=rerank_k)
 
         for i, doc in enumerate(docs[:5]):
@@ -126,16 +119,16 @@ async def chat(request: ChatRequest):
         print(f"Planner: {action}")
 
         if action == "GENERATE":
-            answer = generate(
-                question,
-                docs,
-                history
-            )
+            stream = generate(question, docs, history)
 
-            return {"answer": answer}
+            def token_stream(s=stream):
+                for chunk in s:
+                    yield chunk
+
+            return StreamingResponse(token_stream(), media_type="text/plain")
 
         elif action == "REQUERY":
-            question = rewrite(question)
+            question = rewrite(question, history)
 
         elif action == "RETRIEVE_MORE":
             k += 10
