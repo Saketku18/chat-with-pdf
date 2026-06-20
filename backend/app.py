@@ -43,47 +43,44 @@ class ChatRequest(BaseModel):
 
 
 @app.post("/upload")
-async def upload_pdfs(
-    files: List[UploadFile] = File(...)
-):
+async def upload_pdfs(files: List[UploadFile] = File(...)):
     global vectorstore
 
-    os.makedirs("uploads", exist_ok=True)
+    try:
+        os.makedirs("uploads", exist_ok=True)
 
-    for filename in os.listdir("uploads"):
-        filepath = os.path.join("uploads", filename)
-        if os.path.isfile(filepath):
-            os.remove(filepath)
+        for filename in os.listdir("uploads"):
+            filepath = os.path.join("uploads", filename)
+            if os.path.isfile(filepath):
+                os.remove(filepath)
 
-    pdf_paths = []
+        pdf_paths = []
+        for file in files:
+            if not file.filename.lower().endswith(".pdf"):
+                return {"error": f"{file.filename} is not a PDF"}
+            filepath = os.path.join("uploads", file.filename)
+            with open(filepath, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            pdf_paths.append(filepath)
 
-    for file in files:
-        if not file.filename.lower().endswith(".pdf"):
-            return {"error": f"{file.filename} is not a PDF"}
+        if len(pdf_paths) == 0:
+            return {"error": "No PDF uploaded"}
 
-        filepath = os.path.join("uploads", file.filename)
+        print("Starting chunking...")
+        chunks = create_chunks(pdf_paths)
+        print(f"Chunks done: {len(chunks)}")
 
-        with open(filepath, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        print("Starting vectorstore...")
+        vectorstore = create_vectorstore(chunks)
+        print("Vectorstore done!")
 
-        pdf_paths.append(filepath)
+        return {"message": "PDFs uploaded successfully", "pdfs": len(pdf_paths), "chunks": len(chunks)}
 
-    if len(pdf_paths) == 0:
-        return {"error": "No PDF uploaded"}
-
-    start = time.time()
-    chunks = create_chunks(pdf_paths)
-    print("Chunking Time:", round(time.time() - start, 2), "sec")
-
-    start = time.time()
-    vectorstore = create_vectorstore(chunks)
-    print("Embedding Time:", round(time.time() - start, 2), "sec")
-
-    return {
-        "message": "PDFs uploaded successfully",
-        "pdfs": len(pdf_paths),
-        "chunks": len(chunks)
-    }
+    except Exception as e:
+        import traceback
+        print("UPLOAD ERROR:", str(e))
+        print(traceback.format_exc())
+        return {"error": str(e)}
 
 
 @app.post("/chat")
