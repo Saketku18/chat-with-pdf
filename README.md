@@ -1,8 +1,16 @@
 # Chat with PDF - Agentic RAG System
 
-An AI-powered PDF Question Answering application built using FastAPI, React, LangChain, FAISS, Hugging Face Embeddings, and Groq Llama 3.1.
+An AI-powered PDF Question Answering application built using FastAPI, React, LangChain, FAISS, Cohere Embeddings, and Groq Llama 3.1.
 
-The application allows users to upload one or more PDF documents and ask natural language questions. The system uses an Agentic Retrieval-Augmented Generation (RAG) pipeline with query rewriting, retrieval, reranking, planning, and answer generation to provide accurate responses based on the uploaded documents.
+The application allows users to upload one or more PDF documents and ask natural language questions. The system uses an Agentic Retrieval-Augmented Generation (RAG) pipeline with query rewriting, retrieval, reranking, planning, and streaming answer generation to provide accurate responses based on the uploaded documents.
+
+---
+
+# Live Demo
+
+Frontend: https://chat-with-pdf-sooty-one.vercel.app
+
+Backend: https://chat-with-pdf-backend-1d7e.onrender.com
 
 ---
 
@@ -10,18 +18,21 @@ The application allows users to upload one or more PDF documents and ask natural
 
 * Multi-PDF Upload Support
 * Automatic PDF Parsing and Chunking
-* Vector Embeddings using BAAI/bge-small-en-v1.5
+* Vector Embeddings using Cohere API (embed-english-light-v3.0)
 * FAISS Vector Database
+* Reranking using Cohere API (rerank-english-v3.0)
 * Query Rewriting Agent
 * Retriever Agent
 * Reranker Agent
 * Planner Agent
 * Generator Agent
+* Streaming Responses
 * Conversation History Support
 * Agentic RAG Workflow
 * FastAPI Backend
 * React Frontend
 * Groq Llama 3.1 Integration
+* Deployed on Render (Backend) and Vercel (Frontend)
 
 ---
 
@@ -37,7 +48,7 @@ Query Rewriter Agent
 Retriever Agent
       │
       ▼
-Reranker Agent
+Reranker Agent (Cohere)
       │
       ▼
 Planner Agent
@@ -47,10 +58,10 @@ Planner Agent
       └── GENERATE
       │
       ▼
-Generator Agent
+Generator Agent (Groq Llama 3.1)
       │
       ▼
-Final Answer
+Streaming Answer
 ```
 
 ---
@@ -72,8 +83,8 @@ chat_with_pdf/
 │   │   ├── ingestion.py
 │   │   └── vectorstore.py
 │   │
-│   |
 │   ├── app.py
+│   ├── Dockerfile
 │   ├── requirements.txt
 │   └── .env
 │
@@ -99,19 +110,22 @@ chat_with_pdf/
 * JavaScript
 * CSS
 * Fetch API
+* Deployed on Vercel
 
 ## Backend
 
 * FastAPI
 * Python
 * LangChain
+* Docker
+* Deployed on Render
 
 ## AI & RAG
 
 * Groq Llama 3.1 8B Instant
-* Hugging Face Embeddings
-* BAAI/bge-small-en-v1.5
-* FAISS
+* Cohere Embeddings (embed-english-light-v3.0)
+* Cohere Reranker (rerank-english-v3.0)
+* FAISS Vector Database
 * Agentic RAG Pipeline
 
 ---
@@ -142,7 +156,7 @@ Retrieves relevant chunks from the FAISS vector database.
 
 ## 3. Reranker
 
-Ranks retrieved chunks according to relevance.
+Ranks retrieved chunks using Cohere Reranker API.
 
 Special handling is applied for:
 
@@ -168,7 +182,7 @@ REQUERY
 
 ## 5. Generator
 
-Generates the final response using Groq Llama 3.1.
+Generates the final streaming response using Groq Llama 3.1.
 
 ---
 
@@ -177,8 +191,7 @@ Generates the final response using Groq Llama 3.1.
 ## Clone Repository
 
 ```bash
-git clone https://github.com/your-username/chat-with-pdf.git
-
+git clone https://github.com/Saketku18/chat-with-pdf.git
 cd chat-with-pdf
 ```
 
@@ -216,6 +229,7 @@ Create .env
 
 ```env
 GROQ_API_KEY=your_groq_api_key
+COHERE_API_KEY=your_cohere_api_key
 ```
 
 Run Backend
@@ -274,6 +288,22 @@ http://localhost:5173
 
 # API Endpoints
 
+## Health Check
+
+```http
+GET /
+```
+
+Response
+
+```json
+{
+  "status": "ok"
+}
+```
+
+---
+
 ## Upload PDFs
 
 ```http
@@ -309,13 +339,16 @@ Request
 }
 ```
 
-Response
+Response: Streaming text response
 
-```json
-{
-  "answer": "Machine learning is a process where a machine improves its performance through experience."
-}
-```
+---
+
+# Environment Variables
+
+| Variable | Description |
+|---|---|
+| GROQ_API_KEY | Groq API key for Llama 3.1 |
+| COHERE_API_KEY | Cohere API key for embeddings and reranking |
 
 ---
 
@@ -323,30 +356,26 @@ Response
 
 ```text
 What is machine learning?
-
 What is reinforcement learning?
-
 Summarize the book.
-
 Explain supervised learning.
-
 List the main topics covered.
-
 Who wrote the book?
 ```
 
 ---
 
-# Future Improvements
+# Deployment
 
-* Source Citations
-* Streaming Responses
-* Hybrid Search (BM25 + FAISS)
-* Persistent Chat Memory
-* Multi-User Support
-* Authentication
-* Cloud Deployment
-* Agent Monitoring Dashboard
+## Backend (Render)
+
+* Deployed using Docker container
+* Auto-deploys on git push to main branch
+
+## Frontend (Vercel)
+
+* Deployed using Vercel
+* Auto-deploys on git push to main branch
 
 ---
 
@@ -357,8 +386,19 @@ Example PDF
 ```text
 Chunks Indexed: 372
 Chunking Time: 6.5 sec
-Embedding Time: 40 sec
+Embedding Time: ~2 sec (Cohere API)
 ```
+
+---
+
+# Future Improvements
+
+* Source Citations
+* Hybrid Search (BM25 + FAISS)
+* Persistent Chat Memory
+* Multi-User Support
+* Authentication
+* Agent Monitoring Dashboard
 
 ---
 
