@@ -1,13 +1,12 @@
-from langchain_huggingface import (
-    HuggingFaceEmbeddings
-)
+from langchain_cohere import CohereEmbeddings
 
 from langchain_community.vectorstores import (
     FAISS
 )
-
-embeddings = HuggingFaceEmbeddings(
-    model_name="BAAI/bge-small-en-v1.5"
+import os
+embeddings = CohereEmbeddings(
+    model="embed-english-light-v3.0",
+    cohere_api_key=os.getenv("COHERE_API_KEY")
 )
 
 def create_vectorstore(chunks):
