@@ -139,3 +139,7 @@ async def chat(request: ChatRequest):
         attempts += 1
 
     return {"answer": "Answer not found"}
+
+@app.get("/")
+def root():
+    return {"status": "ok"}
